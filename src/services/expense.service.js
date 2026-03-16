@@ -1,0 +1,87 @@
+const Expense = require('../models/Expense.model');
+const ExpenseCategory = require('../models/ExpenseCategory.model');
+const AppError = require('../utils/AppError');
+
+const getExpensesByCrop = async (cropId, farmerId, filters = {}) => {
+  const query = { cropId, farmerId, deletedAt: null };
+  if (filters.phase) query.phase = filters.phase;
+
+  return Expense.find(query).sort({ date: -1 });
+};
+
+const createExpense = async (farmerId, data) => {
+  // verify category exists and belongs to this farmer or is system
+  const category = await ExpenseCategory.findOne({
+    categoryId: data.categoryId,
+    isActive: true,
+    $or: [{ farmerId: null }, { farmerId }],
+  });
+
+  if (!category) throw new AppError('Category not found or not accessible', 404);
+
+  const pendingAmount = data.amount - (data.paidAmount || 0);
+
+  const expense = await Expense.create({
+    ...data,
+    farmerId,
+    pendingAmount,
+    paymentStatus:
+      pendingAmount <= 0 ? 'paid' : data.paidAmount > 0 ? 'partial' : 'pending',
+  });
+
+  return expense;
+};
+
+const updateExpense = async (expenseId, farmerId, data) => {
+  const expense = await Expense.findOne({ expenseId, farmerId, deletedAt: null });
+  if (!expense) throw new AppError('Expense not found', 404);
+
+  if (data.amount !== undefined || data.paidAmount !== undefined) {
+    const amount = data.amount ?? expense.amount;
+    const paidAmount = data.paidAmount ?? expense.paidAmount;
+    data.pendingAmount = amount - paidAmount;
+    data.paymentStatus =
+      data.pendingAmount <= 0 ? 'paid' : paidAmount > 0 ? 'partial' : 'pending';
+  }
+
+  const updated = await Expense.findOneAndUpdate(
+    { expenseId, farmerId },
+    { ...data, updatedAt: Date.now() },
+    { new: true, runValidators: true }
+  );
+
+  return updated;
+};
+
+const softDeleteExpense = async (expenseId, farmerId) => {
+  const expense = await Expense.findOne({ expenseId, farmerId, deletedAt: null });
+  if (!expense) throw new AppError('Expense not found', 404);
+
+  await Expense.findOneAndUpdate(
+    { expenseId },
+    { deletedAt: Date.now(), deletedBy: farmerId }
+  );
+
+  return { deleted: true };
+};
+
+const restoreExpense = async (expenseId, farmerId) => {
+  const expense = await Expense.findOne({ expenseId, farmerId, deletedAt: { $ne: null } });
+  if (!expense) throw new AppError('Expense not found in trash', 404);
+
+  await Expense.findOneAndUpdate({ expenseId }, { deletedAt: null, deletedBy: null });
+  return { restored: true };
+};
+
+const getTrashExpenses = async (farmerId) => {
+  return Expense.find({ farmerId, deletedAt: { $ne: null } }).sort({ deletedAt: -1 });
+};
+
+module.exports = {
+  getExpensesByCrop,
+  createExpense,
+  updateExpense,
+  softDeleteExpense,
+  restoreExpense,
+  getTrashExpenses,
+};
