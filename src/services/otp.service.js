@@ -103,7 +103,7 @@ const verifyOtp = async (mobile, enteredOtp) => {
 // ─── Twilio SMS ───────────────────────────────────────────────────────────────
 const sendViaTwilio = async (mobile, otp) => {
   const twilio = require('twilio');
-  const client = twilio('AC654642de938a09e45828a6dd709ff495', 'cddda789b4ba0f9578aeb6d1cbee3e1e');
+  const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
   await client.messages.create({
     body: `Your Krishi Khata OTP is: ${otp}. Valid for 10 minutes. Do not share with anyone.`,
