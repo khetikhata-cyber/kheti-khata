@@ -20,6 +20,6 @@ router.post('/login', authLimiter, validate(loginSchema), authController.login);
 
 // Protected routes
 router.get('/me', protect, authController.getMe);
-router.patch('/me', protect, validate(updateProfileSchema), authController.updateProfile);
+router.patch('/update', protect, validate(updateProfileSchema), authController.updateProfile);
 
 module.exports = router;
