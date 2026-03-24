@@ -36,4 +36,22 @@ const restoreField = asyncHandler(async (req, res) => {
   return sendSuccess(res, { message: 'Field restored successfully', data: result });
 });
 
-module.exports = { getAllFields, getField, createField, updateField, deleteField, restoreField };
+const getFieldsWithActiveCrop = asyncHandler(async (req, res) => {
+  console.log('Fetching fields with active crops for farmerId', req.farmer.farmerId);
+  const fields = await fieldService.getFieldsWithActiveCrop(req.farmer.farmerId);
+  return sendSuccess(res, {
+    message: 'Fields with active crops fetched',
+    data: { fields },
+    meta: { count: fields.length },
+  });
+});
+
+module.exports = {
+  getAllFields,
+  getField,
+  createField,
+  updateField,
+  deleteField,
+  restoreField,
+  getFieldsWithActiveCrop,
+};

@@ -10,6 +10,7 @@ router.use(protect);
 
 router.get('/getAllFields', fieldController.getAllFields);
 router.post('/createField', validate(createFieldSchema), fieldController.createField);
+router.get('/fields-with-active-crops', fieldController.getFieldsWithActiveCrop);
 router.get('/:fieldId', fieldController.getField);
 router.patch('/:fieldId', validate(updateFieldSchema), fieldController.updateField);
 router.delete('/:fieldId', fieldController.deleteField);

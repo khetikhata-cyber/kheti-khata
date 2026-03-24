@@ -118,6 +118,33 @@ const restoreField = async (fieldId, farmerId) => {
   return { restored: true };
 };
 
+const getFieldsWithActiveCrop = async (farmerId) => {
+  console.log('inside getFieldsWithActiveCrop for farmerId', farmerId);
+  const fields = await Field.find({ farmerId, deletedAt: null }).sort({ createdAt: -1 }).lean();
+
+  console.log('fields fetched for farmerId', fields);
+
+  // For each field, fetch its active crop
+  const fieldsWithCrops = await Promise.all(
+    fields.map(async (field) => {
+      const activeCrop = await Crop.findOne({
+        fieldId: field.fieldId,
+        farmerId,
+        status: 'active', // only active crops
+        deletedAt: null,
+      })
+        .select('cropId name variety sowingDate expectedDays status')
+        .lean();
+
+      return { ...field, activeCrop: activeCrop || null };
+    })
+  );
+
+  console.log('Fields with active crops:', fieldsWithCrops);
+
+  return fieldsWithCrops;
+};
+
 module.exports = {
   getAllFields,
   getFieldById,
@@ -125,4 +152,5 @@ module.exports = {
   updateField,
   softDeleteField,
   restoreField,
+  getFieldsWithActiveCrop,
 };
