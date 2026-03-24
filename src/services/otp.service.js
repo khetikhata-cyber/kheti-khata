@@ -26,7 +26,9 @@ const sendOtp = async (mobile) => {
     const cooldown = OTP_EXPIRY_MS / 1000 - 60; // 540 seconds
     if (secondsLeft > cooldown) {
       const waitSeconds = secondsLeft - cooldown;
-      throw new AppError(`Please wait ${waitSeconds} seconds before requesting a new OTP`, 429);
+      throw new AppError(`Please wait ${waitSeconds} seconds before requesting a new OTP`, 429, {
+        remainingSeconds: waitSeconds,
+      });
     }
   }
 

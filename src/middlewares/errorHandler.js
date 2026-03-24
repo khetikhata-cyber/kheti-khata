@@ -16,10 +16,19 @@ const handleValidationError = (err) => {
 const handleJWTError = () => new AppError('Invalid token. Please login again.', 401);
 const handleJWTExpiredError = () => new AppError('Token expired. Please login again.', 401);
 
+const getErrorDetails = (err) => {
+  const excludedKeys = new Set(['message', 'statusCode', 'isOperational', 'stack', 'name']);
+
+  return Object.fromEntries(Object.entries(err).filter(([key]) => !excludedKeys.has(key)));
+};
+
 const sendErrorDev = (err, res) => {
+  const details = getErrorDetails(err);
+
   res.status(err.statusCode).json({
     success: false,
     message: err.message,
+    ...details,
     stack: err.stack,
     error: err,
   });
@@ -27,7 +36,9 @@ const sendErrorDev = (err, res) => {
 
 const sendErrorProd = (err, res) => {
   if (err.isOperational) {
-    res.status(err.statusCode).json({ success: false, message: err.message });
+    const details = getErrorDetails(err);
+
+    res.status(err.statusCode).json({ success: false, message: err.message, ...details });
   } else {
     logger.error('UNEXPECTED ERROR:', err);
     res.status(500).json({ success: false, message: 'Something went wrong. Please try again later.' });
