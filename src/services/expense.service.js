@@ -11,13 +11,13 @@ const getExpensesByCrop = async (cropId, farmerId, filters = {}) => {
 
 const createExpense = async (farmerId, data) => {
   // verify category exists and belongs to this farmer or is system
-  const category = await ExpenseCategory.findOne({
-    categoryId: data.categoryId,
-    isActive: true,
-    $or: [{ farmerId: null }, { farmerId }],
-  });
+  // const category = await ExpenseCategory.findOne({
+  //   categoryId: data.categoryId,
+  //   isActive: true,
+  //   $or: [{ farmerId: null }, { farmerId }],
+  // });
 
-  if (!category) throw new AppError('Category not found or not accessible', 404);
+  // if (!category) throw new AppError('Category not found or not accessible', 404);
 
   const pendingAmount = data.amount - (data.paidAmount || 0);
 
@@ -25,8 +25,7 @@ const createExpense = async (farmerId, data) => {
     ...data,
     farmerId,
     pendingAmount,
-    paymentStatus:
-      pendingAmount <= 0 ? 'paid' : data.paidAmount > 0 ? 'partial' : 'pending',
+    paymentStatus: pendingAmount <= 0 ? 'paid' : data.paidAmount > 0 ? 'partial' : 'pending',
   });
 
   return expense;
@@ -40,8 +39,7 @@ const updateExpense = async (expenseId, farmerId, data) => {
     const amount = data.amount ?? expense.amount;
     const paidAmount = data.paidAmount ?? expense.paidAmount;
     data.pendingAmount = amount - paidAmount;
-    data.paymentStatus =
-      data.pendingAmount <= 0 ? 'paid' : paidAmount > 0 ? 'partial' : 'pending';
+    data.paymentStatus = data.pendingAmount <= 0 ? 'paid' : paidAmount > 0 ? 'partial' : 'pending';
   }
 
   const updated = await Expense.findOneAndUpdate(
@@ -57,10 +55,7 @@ const softDeleteExpense = async (expenseId, farmerId) => {
   const expense = await Expense.findOne({ expenseId, farmerId, deletedAt: null });
   if (!expense) throw new AppError('Expense not found', 404);
 
-  await Expense.findOneAndUpdate(
-    { expenseId },
-    { deletedAt: Date.now(), deletedBy: farmerId }
-  );
+  await Expense.findOneAndUpdate({ expenseId }, { deletedAt: Date.now(), deletedBy: farmerId });
 
   return { deleted: true };
 };

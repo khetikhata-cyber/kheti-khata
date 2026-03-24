@@ -8,6 +8,7 @@ const AppError = require('../utils/AppError');
 
 const getCropsByField = async (fieldId, farmerId) => {
   // verify field belongs to farmer
+  console.log(`Fetching crops for fieldId: ${fieldId}, farmerId: ${farmerId}`);
   const field = await Field.findOne({ fieldId, farmerId, deletedAt: null });
   if (!field) throw new AppError('Field not found', 404);
 

@@ -8,13 +8,13 @@ const { createExpenseSchema, updateExpenseSchema } = require('../validations/exp
 router.use(protect);
 
 // Trash — fetch all soft-deleted expenses for this farmer
-router.get('/trash',                            expenseController.getTrash);
+router.get('/trash', expenseController.getTrash);
 
 // Expenses by crop
-router.get('/crop/:cropId',                     expenseController.getExpenses);
-router.post('/',   validate(createExpenseSchema), expenseController.createExpense);
+router.get('/crop/:cropId', expenseController.getExpenses);
+router.post('/createExpense', validate(createExpenseSchema), expenseController.createExpense);
 router.patch('/:expenseId', validate(updateExpenseSchema), expenseController.updateExpense);
-router.delete('/:expenseId',                    expenseController.deleteExpense);
-router.patch('/:expenseId/restore',             expenseController.restoreExpense);
+router.delete('/:expenseId', expenseController.deleteExpense);
+router.patch('/:expenseId/restore', expenseController.restoreExpense);
 
 module.exports = router;
