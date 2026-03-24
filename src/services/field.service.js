@@ -4,13 +4,14 @@ const Expense = require('../models/Expense.model');
 const Bataidaar = require('../models/Bataidaar.model');
 const Production = require('../models/Production.model');
 const Sale = require('../models/Sale.model');
+const { v4: uuidv4 } = require('uuid');
 const AppError = require('../utils/AppError');
 
 // Conversion rates to acres
 const UNIT_TO_ACRES = {
-  acre:    1,
-  bigha:   0.625,
-  guntha:  0.025,
+  acre: 1,
+  bigha: 0.625,
+  guntha: 0.025,
   hectare: 2.471,
 };
 
@@ -31,16 +32,14 @@ const getFieldById = async (fieldId, farmerId) => {
 };
 
 const createField = async (farmerId, data) => {
-  const areaAcres = convertToAcres(data.areaValue, data.areaUnit);
+  // const areaAcres = convertToAcres(data.areaValue, data.areaUnit);
 
   const field = await Field.create({
-    fieldId: data.fieldId,
+    fieldId: uuidv4(),
     farmerId,
-    name:           data.name,
-    areaAcres,
-    areaUnit:       data.areaUnit,
-    irrigationType: data.irrigationType,
-    khasraNumber:   data.khasraNumber || null,
+    name: data.name,
+    areaAcres: data.areaAcres, // using areaAcres directly from request body since conversion is handled in controller validation
+    khasraNumber: data.khasraNumber || null,
   });
 
   return field;
@@ -119,4 +118,11 @@ const restoreField = async (fieldId, farmerId) => {
   return { restored: true };
 };
 
-module.exports = { getAllFields, getFieldById, createField, updateField, softDeleteField, restoreField };
+module.exports = {
+  getAllFields,
+  getFieldById,
+  createField,
+  updateField,
+  softDeleteField,
+  restoreField,
+};

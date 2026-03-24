@@ -6,7 +6,7 @@ const getAllFields = asyncHandler(async (req, res) => {
   const fields = await fieldService.getAllFields(req.farmer.farmerId);
   return sendSuccess(res, {
     message: 'Fields fetched',
-    data: fields,
+    data: { fields },
     meta: { count: fields.length },
   });
 });

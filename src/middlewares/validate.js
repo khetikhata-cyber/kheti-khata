@@ -11,6 +11,7 @@ const validate = (schema) => (req, res, next) => {
       field: d.path.join('.'),
       message: d.message.replace(/['"]/g, ''),
     }));
+    console.error('Validation error:', errors, { body: req.body });
     return sendValidationError(res, errors);
   }
   next();

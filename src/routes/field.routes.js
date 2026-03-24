@@ -8,11 +8,11 @@ const { createFieldSchema, updateFieldSchema } = require('../validations/field.v
 // All field routes are protected
 router.use(protect);
 
-router.get('/',                       fieldController.getAllFields);
-router.post('/',   validate(createFieldSchema), fieldController.createField);
-router.get('/:fieldId',               fieldController.getField);
+router.get('/getAllFields', fieldController.getAllFields);
+router.post('/createField', validate(createFieldSchema), fieldController.createField);
+router.get('/:fieldId', fieldController.getField);
 router.patch('/:fieldId', validate(updateFieldSchema), fieldController.updateField);
-router.delete('/:fieldId',            fieldController.deleteField);
-router.patch('/:fieldId/restore',     fieldController.restoreField);
+router.delete('/:fieldId', fieldController.deleteField);
+router.patch('/:fieldId/restore', fieldController.restoreField);
 
 module.exports = router;
