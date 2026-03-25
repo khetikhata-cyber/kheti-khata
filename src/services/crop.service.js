@@ -27,7 +27,7 @@ const createCrop = async (farmerId, data) => {
   const field = await Field.findOne({ fieldId: data.fieldId, farmerId, deletedAt: null });
   if (!field) throw new AppError('Field not found', 404);
 
-  const crop = await Crop.create({ ...data, farmerId });
+  const crop = await Crop.create({ ...data, farmerId, totalExpenses: 0 });
   return crop;
 };
 

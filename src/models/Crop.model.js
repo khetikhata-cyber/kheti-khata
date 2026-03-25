@@ -12,6 +12,7 @@ const cropSchema = new mongoose.Schema(
     fieldId: { type: String, required: true, index: true },
     farmerId: { type: String, required: true, index: true },
     name: { type: String, required: true, trim: true },
+    totalExpenses: { type: Number, default: 0 },
     variety: { type: String, default: null },
     cropPhotoKey: { type: String, default: null },
     sowingDate: { type: String, required: true },

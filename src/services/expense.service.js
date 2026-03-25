@@ -1,5 +1,6 @@
 const Expense = require('../models/Expense.model');
 const ExpenseCategory = require('../models/ExpenseCategory.model');
+const Crop = require('../models/Crop.model');
 const AppError = require('../utils/AppError');
 
 const getExpensesByCrop = async (cropId, farmerId, filters = {}) => {
@@ -27,6 +28,15 @@ const createExpense = async (farmerId, data) => {
     pendingAmount,
     paymentStatus: pendingAmount <= 0 ? 'paid' : data.paidAmount > 0 ? 'partial' : 'pending',
   });
+
+  const crop = await Crop.findOneAndUpdate(
+    {
+      $or: [{ cropId: data.cropId }],
+    },
+    {
+      $inc: { totalExpenses: data.amount },
+    }
+  );
 
   return expense;
 };

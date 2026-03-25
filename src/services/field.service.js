@@ -127,16 +127,16 @@ const getFieldsWithActiveCrop = async (farmerId) => {
   // For each field, fetch its active crop
   const fieldsWithCrops = await Promise.all(
     fields.map(async (field) => {
-      const activeCrop = await Crop.findOne({
+      const activeCrop = await Crop.find({
         fieldId: field.fieldId,
         farmerId,
         status: 'active', // only active crops
         deletedAt: null,
       })
-        .select('cropId name variety sowingDate expectedDays status')
+        .select('cropId name variety sowingDate expectedDays status totalExpenses')
         .lean();
 
-      return { ...field, activeCrop: activeCrop || null };
+      return { ...field, activeCrops: activeCrop || null };
     })
   );
 
