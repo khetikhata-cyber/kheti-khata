@@ -16,6 +16,18 @@ const getCrop = asyncHandler(async (req, res) => {
   return sendSuccess(res, { message: 'Crop fetched', data: crop });
 });
 
+const filterCompletedCrops = asyncHandler(async (req, res) => {
+  const crops = await cropService.filterCompletedCropsByDateRange(
+    req.farmer.farmerId,
+    req.body
+  );
+  return sendSuccess(res, {
+    message: 'Completed crops fetched successfully',
+    data: crops,
+    meta: { count: crops.length },
+  });
+});
+
 const createCrop = asyncHandler(async (req, res) => {
   const crop = await cropService.createCrop(req.farmer.farmerId, req.body);
   return sendCreated(res, { message: 'Crop created successfully', data: crop });
@@ -53,6 +65,7 @@ const deletePhoto = asyncHandler(async (req, res) => {
 module.exports = {
   getCropsByField,
   getCrop,
+  filterCompletedCrops,
   createCrop,
   updateCrop,
   deleteCrop,

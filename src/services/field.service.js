@@ -1,7 +1,6 @@
 const Field = require('../models/Field.model');
 const Crop = require('../models/Crop.model');
 const Expense = require('../models/Expense.model');
-const Bataidaar = require('../models/Bataidaar.model');
 const Production = require('../models/Production.model');
 const Sale = require('../models/Sale.model');
 const { v4: uuidv4 } = require('uuid');
@@ -63,7 +62,7 @@ const updateField = async (fieldId, farmerId, data) => {
 };
 
 /**
- * Soft delete field + cascade to all crops, expenses, bataidaars, productions, sales
+ * Soft delete field + cascade to all crops, expenses, productions, sales
  */
 const softDeleteField = async (fieldId, farmerId) => {
   const field = await Field.findOne({ fieldId, farmerId, deletedAt: null });
@@ -85,7 +84,6 @@ const softDeleteField = async (fieldId, farmerId) => {
     await Promise.all([
       Crop.updateMany({ cropId: { $in: cropIds } }, ts),
       Expense.updateMany({ cropId: { $in: cropIds } }, ts),
-      Bataidaar.updateMany({ cropId: { $in: cropIds } }, ts),
       Production.updateMany({ cropId: { $in: cropIds } }, ts),
       Sale.updateMany({ cropId: { $in: cropIds } }, ts),
     ]);
@@ -110,7 +108,6 @@ const restoreField = async (fieldId, farmerId) => {
     Field.findOneAndUpdate({ fieldId }, restore),
     Crop.updateMany({ cropId: { $in: cropIds } }, restore),
     Expense.updateMany({ cropId: { $in: cropIds } }, restore),
-    Bataidaar.updateMany({ cropId: { $in: cropIds } }, restore),
     Production.updateMany({ cropId: { $in: cropIds } }, restore),
     Sale.updateMany({ cropId: { $in: cropIds } }, restore),
   ]);

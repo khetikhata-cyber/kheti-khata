@@ -65,7 +65,7 @@ const previewSettlement = async (cropId, farmerId) => {
   const [expenses, sales, bataidaar] = await Promise.all([
     Expense.find({ cropId, farmerId, deletedAt: null }),
     Sale.find({ cropId, farmerId, deletedAt: null }),
-    crop.bataidaarId ? Bataidaar.findOne({ bataidaarId: crop.bataidaarId, deletedAt: null }) : null,
+    crop.bataidaarId ? Bataidaar.findOne({ _id: crop.bataidaarId, deletedAt: null }) : null,
   ]);
 
   const result = calculateSettlement({
@@ -97,7 +97,7 @@ const finalizeSettlement = async (cropId, farmerId, pdfUrl = null) => {
   const [expenses, sales, bataidaar] = await Promise.all([
     Expense.find({ cropId, farmerId, deletedAt: null }),
     Sale.find({ cropId, farmerId, deletedAt: null }),
-    crop.bataidaarId ? Bataidaar.findOne({ bataidaarId: crop.bataidaarId, deletedAt: null }) : null,
+    crop.bataidaarId ? Bataidaar.findOne({ _id: crop.bataidaarId, deletedAt: null }) : null,
   ]);
 
   const calculated = calculateSettlement({

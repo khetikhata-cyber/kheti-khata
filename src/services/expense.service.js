@@ -1,5 +1,4 @@
 const Expense = require('../models/Expense.model');
-const ExpenseCategory = require('../models/ExpenseCategory.model');
 const Crop = require('../models/Crop.model');
 const AppError = require('../utils/AppError');
 
@@ -20,6 +19,9 @@ const createExpense = async (farmerId, data) => {
 
   // if (!category) throw new AppError('Category not found or not accessible', 404);
 
+  const crop = await Crop.findOne({ cropId: data.cropId, farmerId, deletedAt: null });
+  if (!crop) throw new AppError('Crop not found', 404);
+
   const pendingAmount = data.amount - (data.paidAmount || 0);
 
   const expense = await Expense.create({
@@ -29,14 +31,14 @@ const createExpense = async (farmerId, data) => {
     paymentStatus: pendingAmount <= 0 ? 'paid' : data.paidAmount > 0 ? 'partial' : 'pending',
   });
 
-  const crop = await Crop.findOneAndUpdate(
-    {
-      $or: [{ cropId: data.cropId }],
+  const cropUpdate = {
+    $inc: {
+      totalExpenses: data.amount,
     },
-    {
-      $inc: { totalExpenses: data.amount },
-    }
-  );
+    ...(data.phase === 'sale' ? { $set: { salePrice: data.amount } } : {}),
+  };
+
+  await Crop.findOneAndUpdate({ cropId: data.cropId, farmerId, deletedAt: null }, cropUpdate);
 
   return expense;
 };

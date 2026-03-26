@@ -3,12 +3,21 @@ const router = express.Router();
 const cropController = require('../controllers/crop.controller');
 const { protect } = require('../middlewares/auth');
 const validate = require('../middlewares/validate');
-const { createCropSchema, updateCropSchema } = require('../validations/crop.validation');
+const {
+  createCropSchema,
+  updateCropSchema,
+  filterCompletedCropsSchema,
+} = require('../validations/crop.validation');
 
 router.use(protect);
 
 // Crops by field
 router.get('/field/:fieldId', cropController.getCropsByField);
+router.post(
+  '/filter/completed',
+  validate(filterCompletedCropsSchema),
+  cropController.filterCompletedCrops
+);
 
 // Single crop CRUD
 router.post('/createCrop', validate(createCropSchema), cropController.createCrop);
