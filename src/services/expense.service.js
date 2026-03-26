@@ -32,9 +32,8 @@ const createExpense = async (farmerId, data) => {
   });
 
   const cropUpdate = {
-    $inc: {
-      totalExpenses: data.amount,
-    },
+    ...(data.phase !== 'sale' ? { $inc: { totalExpenses: data.amount } } : {}),
+
     ...(data.phase === 'sale' ? { $set: { salePrice: data.amount } } : {}),
   };
 
