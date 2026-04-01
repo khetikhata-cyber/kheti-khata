@@ -5,6 +5,7 @@ const Production = require('../models/Production.model');
 const Sale = require('../models/Sale.model');
 const { v4: uuidv4 } = require('uuid');
 const AppError = require('../utils/AppError');
+const { getRestoreUpdate, getSoftDeleteUpdate } = require('../utils/trashRestore.helper');
 
 // Conversion rates to acres
 const UNIT_TO_ACRES = {
@@ -69,23 +70,29 @@ const softDeleteField = async (fieldId, farmerId) => {
   if (!field) throw new AppError('Field not found', 404);
 
   const now = Date.now();
+  const fieldDeleteUpdate = getSoftDeleteUpdate({ farmerId, deletedAt: now });
 
   // 1. soft delete field
-  await Field.findOneAndUpdate({ fieldId }, { deletedAt: now, deletedBy: farmerId });
+  await Field.findOneAndUpdate({ fieldId, farmerId }, fieldDeleteUpdate);
 
   // 2. find all crops under field
   const crops = await Crop.find({ fieldId, farmerId, deletedAt: null }).select('cropId');
   const cropIds = crops.map((c) => c.cropId);
 
   if (cropIds.length > 0) {
-    const ts = { deletedAt: now, deletedBy: farmerId };
+    const cascadeUpdate = getSoftDeleteUpdate({
+      farmerId,
+      deletedAt: now,
+      parentType: 'field',
+      parentId: fieldId,
+    });
 
     // 3. cascade soft delete
     await Promise.all([
-      Crop.updateMany({ cropId: { $in: cropIds } }, ts),
-      Expense.updateMany({ cropId: { $in: cropIds } }, ts),
-      Production.updateMany({ cropId: { $in: cropIds } }, ts),
-      Sale.updateMany({ cropId: { $in: cropIds } }, ts),
+      Crop.updateMany({ cropId: { $in: cropIds }, farmerId, deletedAt: null }, cascadeUpdate),
+      Expense.updateMany({ cropId: { $in: cropIds }, farmerId, deletedAt: null }, cascadeUpdate),
+      Production.updateMany({ cropId: { $in: cropIds }, farmerId, deletedAt: null }, cascadeUpdate),
+      Sale.updateMany({ cropId: { $in: cropIds }, farmerId, deletedAt: null }, cascadeUpdate),
     ]);
   }
 
@@ -96,20 +103,58 @@ const softDeleteField = async (fieldId, farmerId) => {
  * Restore soft-deleted field + all children
  */
 const restoreField = async (fieldId, farmerId) => {
-  const field = await Field.findOne({ fieldId, farmerId, deletedAt: { $ne: null } });
+  const field = await Field.findOne({ _id: fieldId, farmerId, deletedAt: { $ne: null } });
   if (!field) throw new AppError('Field not found in trash', 404);
 
-  const restore = { deletedAt: null, deletedBy: null };
+  const restore = getRestoreUpdate();
 
-  const crops = await Crop.find({ fieldId, farmerId, deletedAt: { $ne: null } }).select('cropId');
+  const crops = await Crop.find({
+    fieldId: field.fieldId,
+    farmerId,
+    deletedAt: { $ne: null },
+    deletedParentType: 'field',
+    deletedParentId: field.fieldId,
+  }).select('cropId');
   const cropIds = crops.map((c) => c.cropId);
 
   await Promise.all([
-    Field.findOneAndUpdate({ fieldId }, restore),
-    Crop.updateMany({ cropId: { $in: cropIds } }, restore),
-    Expense.updateMany({ cropId: { $in: cropIds } }, restore),
-    Production.updateMany({ cropId: { $in: cropIds } }, restore),
-    Sale.updateMany({ cropId: { $in: cropIds } }, restore),
+    Field.findOneAndUpdate({ _id: fieldId, farmerId }, restore),
+    Crop.updateMany(
+      {
+        cropId: { $in: cropIds },
+        farmerId,
+        deletedParentType: 'field',
+        deletedParentId: field.fieldId,
+      },
+      restore
+    ),
+    Expense.updateMany(
+      {
+        cropId: { $in: cropIds },
+        farmerId,
+        deletedParentType: 'field',
+        deletedParentId: field.fieldId,
+      },
+      restore
+    ),
+    Production.updateMany(
+      {
+        cropId: { $in: cropIds },
+        farmerId,
+        deletedParentType: 'field',
+        deletedParentId: field.fieldId,
+      },
+      restore
+    ),
+    Sale.updateMany(
+      {
+        cropId: { $in: cropIds },
+        farmerId,
+        deletedParentType: 'field',
+        deletedParentId: field.fieldId,
+      },
+      restore
+    ),
   ]);
 
   return { restored: true };

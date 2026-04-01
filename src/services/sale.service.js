@@ -1,6 +1,11 @@
 const Sale = require('../models/Sale.model');
 const Production = require('../models/Production.model');
 const AppError = require('../utils/AppError');
+const {
+  getRestoreUpdate,
+  getSoftDeleteUpdate,
+  restoreProductionIfNeeded,
+} = require('../utils/trashRestore.helper');
 
 const getSalesByProduction = async (productionId, farmerId) => {
   return Sale.find({ productionId, farmerId, deletedAt: null }).sort({ saleDate: -1 });
@@ -74,7 +79,10 @@ const softDeleteSale = async (saleId, farmerId) => {
   const sale = await Sale.findOne({ saleId, farmerId, deletedAt: null });
   if (!sale) throw new AppError('Sale record not found', 404);
 
-  await Sale.findOneAndUpdate({ saleId }, { deletedAt: Date.now(), deletedBy: farmerId });
+  await Sale.findOneAndUpdate(
+    { saleId, farmerId },
+    getSoftDeleteUpdate({ farmerId, deletedAt: Date.now() })
+  );
 
   // Restore unsold balance
   await Production.findOneAndUpdate(
@@ -89,7 +97,10 @@ const restoreSale = async (saleId, farmerId) => {
   const sale = await Sale.findOne({ saleId, farmerId, deletedAt: { $ne: null } });
   if (!sale) throw new AppError('Sale record not found in trash', 404);
 
-  await Sale.findOneAndUpdate({ saleId }, { deletedAt: null, deletedBy: null });
+  const restoredAncestors = [];
+  await restoreProductionIfNeeded(sale.productionId, farmerId, restoredAncestors);
+
+  await Sale.findOneAndUpdate({ saleId, farmerId }, getRestoreUpdate());
 
   // Re-deduct unsold balance
   await Production.findOneAndUpdate(
@@ -97,7 +108,7 @@ const restoreSale = async (saleId, farmerId) => {
     { $inc: { unsoldBalance: -sale.quantity }, updatedAt: Date.now() }
   );
 
-  return { restored: true };
+  return { restored: true, restoredAncestors };
 };
 
 module.exports = {

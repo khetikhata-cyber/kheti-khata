@@ -2,6 +2,11 @@ const Production = require('../models/Production.model');
 const Sale = require('../models/Sale.model');
 const Crop = require('../models/Crop.model');
 const AppError = require('../utils/AppError');
+const {
+  getRestoreUpdate,
+  getSoftDeleteUpdate,
+  restoreCropIfNeeded,
+} = require('../utils/trashRestore.helper');
 
 const getProductionByCrop = async (cropId, farmerId) => {
   const production = await Production.findOne({ cropId, farmerId, deletedAt: null });
@@ -59,9 +64,16 @@ const softDeleteProduction = async (productionId, farmerId) => {
   if (!production) throw new AppError('Production record not found', 404);
 
   const now = Date.now();
+  const productionDeleteUpdate = getSoftDeleteUpdate({ farmerId, deletedAt: now });
+  const cascadeUpdate = getSoftDeleteUpdate({
+    farmerId,
+    deletedAt: now,
+    parentType: 'production',
+    parentId: productionId,
+  });
   await Promise.all([
-    Production.findOneAndUpdate({ productionId }, { deletedAt: now, deletedBy: farmerId }),
-    Sale.updateMany({ productionId }, { deletedAt: now, deletedBy: farmerId }),
+    Production.findOneAndUpdate({ productionId, farmerId }, productionDeleteUpdate),
+    Sale.updateMany({ productionId, farmerId, deletedAt: null }, cascadeUpdate),
   ]);
 
   return { deleted: true };
@@ -71,13 +83,24 @@ const restoreProduction = async (productionId, farmerId) => {
   const production = await Production.findOne({ productionId, farmerId, deletedAt: { $ne: null } });
   if (!production) throw new AppError('Production record not found in trash', 404);
 
-  const restore = { deletedAt: null, deletedBy: null };
+  const restoredAncestors = [];
+  await restoreCropIfNeeded(production.cropId, farmerId, restoredAncestors);
+
+  const restore = getRestoreUpdate();
   await Promise.all([
-    Production.findOneAndUpdate({ productionId }, restore),
-    Sale.updateMany({ productionId }, restore),
+    Production.findOneAndUpdate({ productionId, farmerId }, restore),
+    Sale.updateMany(
+      {
+        productionId,
+        farmerId,
+        deletedParentType: 'production',
+        deletedParentId: productionId,
+      },
+      restore
+    ),
   ]);
 
-  return { restored: true };
+  return { restored: true, restoredAncestors };
 };
 
 module.exports = {

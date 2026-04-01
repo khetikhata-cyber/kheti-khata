@@ -37,6 +37,8 @@ const expenseSchema = new mongoose.Schema(
     // isOwnedAsset: { type: Boolean, default: false },
     deletedAt: { type: Number, default: null },
     deletedBy: { type: String, default: null },
+    deletedParentType: { type: String, default: null },
+    deletedParentId: { type: String, default: null },
     createdAt: { type: Number, default: () => Date.now() },
     updatedAt: { type: Number, default: () => Date.now() },
   },

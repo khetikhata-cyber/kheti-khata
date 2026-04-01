@@ -1,6 +1,11 @@
 const Expense = require('../models/Expense.model');
 const Crop = require('../models/Crop.model');
 const AppError = require('../utils/AppError');
+const {
+  getRestoreUpdate,
+  getSoftDeleteUpdate,
+  restoreCropIfNeeded,
+} = require('../utils/trashRestore.helper');
 
 const getExpensesByCrop = async (cropId, farmerId, filters = {}) => {
   const query = { cropId, farmerId, deletedAt: null };
@@ -66,17 +71,23 @@ const softDeleteExpense = async (expenseId, farmerId) => {
   const expense = await Expense.findOne({ expenseId, farmerId, deletedAt: null });
   if (!expense) throw new AppError('Expense not found', 404);
 
-  await Expense.findOneAndUpdate({ expenseId }, { deletedAt: Date.now(), deletedBy: farmerId });
+  await Expense.findOneAndUpdate(
+    { expenseId, farmerId },
+    getSoftDeleteUpdate({ farmerId, deletedAt: Date.now() })
+  );
 
   return { deleted: true };
 };
 
 const restoreExpense = async (expenseId, farmerId) => {
-  const expense = await Expense.findOne({ expenseId, farmerId, deletedAt: { $ne: null } });
+  const expense = await Expense.findOne({ _id: expenseId, farmerId, deletedAt: { $ne: null } });
   if (!expense) throw new AppError('Expense not found in trash', 404);
 
-  await Expense.findOneAndUpdate({ expenseId }, { deletedAt: null, deletedBy: null });
-  return { restored: true };
+  const restoredAncestors = [];
+  await restoreCropIfNeeded(expense.cropId, farmerId, restoredAncestors);
+
+  await Expense.findOneAndUpdate({ _id: expenseId, farmerId }, getRestoreUpdate());
+  return { restored: true, restoredAncestors };
 };
 
 const getTrashExpenses = async (farmerId) => {

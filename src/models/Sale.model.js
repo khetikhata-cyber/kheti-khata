@@ -15,6 +15,8 @@ const saleSchema = new mongoose.Schema(
     saleDate:     { type: Number, required: true },
     deletedAt:    { type: Number, default: null },
     deletedBy:    { type: String, default: null },
+    deletedParentType: { type: String, default: null },
+    deletedParentId: { type: String, default: null },
     createdAt:    { type: Number, default: () => Date.now() },
     updatedAt:    { type: Number, default: () => Date.now() },
   },

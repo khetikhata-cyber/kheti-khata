@@ -5,6 +5,11 @@ const Production = require('../models/Production.model');
 const Sale = require('../models/Sale.model');
 const Field = require('../models/Field.model');
 const AppError = require('../utils/AppError');
+const {
+  getRestoreUpdate,
+  getSoftDeleteUpdate,
+  restoreFieldIfNeeded,
+} = require('../utils/trashRestore.helper');
 
 const parseCropDate = (value) => {
   if (!value || typeof value !== 'string') return null;
@@ -149,13 +154,19 @@ const softDeleteCrop = async (cropId, farmerId) => {
   if (!crop) throw new AppError('Crop not found', 404);
 
   const now = Date.now();
-  const ts = { deletedAt: now, deletedBy: farmerId };
+  const cropDeleteUpdate = getSoftDeleteUpdate({ farmerId, deletedAt: now });
+  const cascadeUpdate = getSoftDeleteUpdate({
+    farmerId,
+    deletedAt: now,
+    parentType: 'crop',
+    parentId: cropId,
+  });
 
   await Promise.all([
-    Crop.findOneAndUpdate({ cropId }, ts),
-    Expense.updateMany({ cropId }, ts),
-    Production.updateMany({ cropId }, ts),
-    Sale.updateMany({ cropId }, ts),
+    Crop.findOneAndUpdate({ cropId, farmerId }, cropDeleteUpdate),
+    Expense.updateMany({ cropId, farmerId, deletedAt: null }, cascadeUpdate),
+    Production.updateMany({ cropId, farmerId, deletedAt: null }, cascadeUpdate),
+    Sale.updateMany({ cropId, farmerId, deletedAt: null }, cascadeUpdate),
   ]);
 
   return { deleted: true };
@@ -165,19 +176,31 @@ const softDeleteCrop = async (cropId, farmerId) => {
  * Restore crop + all its children
  */
 const restoreCrop = async (cropId, farmerId) => {
-  const crop = await Crop.findOne({ cropId, farmerId, deletedAt: { $ne: null } });
+  const crop = await Crop.findOne({ _id: cropId, farmerId, deletedAt: { $ne: null } });
   if (!crop) throw new AppError('Crop not found in trash', 404);
 
-  const restore = { deletedAt: null, deletedBy: null };
+  const restoredAncestors = [];
+  await restoreFieldIfNeeded(crop.fieldId, farmerId, restoredAncestors);
+
+  const restore = getRestoreUpdate();
 
   await Promise.all([
-    Crop.findOneAndUpdate({ cropId }, restore),
-    Expense.updateMany({ cropId }, restore),
-    Production.updateMany({ cropId }, restore),
-    Sale.updateMany({ cropId }, restore),
+    Crop.findOneAndUpdate({ _id: cropId, farmerId }, restore),
+    Expense.updateMany(
+      { cropId, farmerId, deletedParentType: 'crop', deletedParentId: cropId },
+      restore
+    ),
+    Production.updateMany(
+      { cropId, farmerId, deletedParentType: 'crop', deletedParentId: cropId },
+      restore
+    ),
+    Sale.updateMany(
+      { cropId, farmerId, deletedParentType: 'crop', deletedParentId: cropId },
+      restore
+    ),
   ]);
 
-  return { restored: true };
+  return { restored: true, restoredAncestors };
 };
 
 /**

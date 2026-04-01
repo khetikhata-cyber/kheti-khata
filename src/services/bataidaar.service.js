@@ -67,10 +67,14 @@ const softDeleteBataidaar = async (bataidaarId, farmerId) => {
 };
 
 const restoreBataidaar = async (bataidaarId, farmerId) => {
-  const bataidaar = await Bataidaar.findOne({ bataidaarId, farmerId, deletedAt: { $ne: null } });
+  const bataidaar = await Bataidaar.findOne({
+    _id: bataidaarId,
+    farmerId,
+    deletedAt: { $ne: null },
+  });
   if (!bataidaar) throw new AppError('Bataidaar not found in trash', 404);
 
-  await Bataidaar.findOneAndUpdate({ bataidaarId }, { deletedAt: null, deletedBy: null });
+  await Bataidaar.findOneAndUpdate({ _id: bataidaarId }, { deletedAt: null, deletedBy: null });
 
   // await Crop.updateMany(
   //   { farmerId, _id: { $in: bataidaar.linkedCropIds }, deletedAt: null },

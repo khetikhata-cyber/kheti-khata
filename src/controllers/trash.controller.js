@@ -1,13 +1,5 @@
-const trashService   = require('../services/trash.service');
-const fieldService   = require('../services/field.service');
-const cropService    = require('../services/crop.service');
-const expenseService = require('../services/expense.service');
-const loanService    = require('../services/loan.service');
-const bataidaarService  = require('../services/bataidaar.service');
-const productionService = require('../services/production.service');
-const saleService       = require('../services/sale.service');
-const asyncHandler   = require('../utils/asyncHandler');
-const AppError       = require('../utils/AppError');
+const trashService = require('../services/trash.service');
+const asyncHandler = require('../utils/asyncHandler');
 const { sendSuccess } = require('../utils/apiResponse');
 
 // GET /trash — all deleted items across all collections
@@ -20,26 +12,15 @@ const getAllTrash = asyncHandler(async (req, res) => {
   });
 });
 
-// PATCH /trash/restore — restore any single item by type + id
+// PATCH /trash/restore — restore any single item by modalType + id
 const restoreItem = asyncHandler(async (req, res) => {
+  console.log('3======>');
   const { type, id } = req.body;
   const farmerId = req.farmer.farmerId;
-  let result;
-
-  switch (type) {
-    case 'field':      result = await fieldService.restoreField(id, farmerId);           break;
-    case 'crop':       result = await cropService.restoreCrop(id, farmerId);             break;
-    case 'expense':    result = await expenseService.restoreExpense(id, farmerId);       break;
-    case 'loan':       result = await loanService.restoreLoan(id, farmerId);             break;
-    case 'bataidaar':  result = await bataidaarService.restoreBataidaar(id, farmerId);   break;
-    case 'production': result = await productionService.restoreProduction(id, farmerId); break;
-    case 'sale':       result = await saleService.restoreSale(id, farmerId);             break;
-    default:
-      throw new AppError(`Unknown item type: ${type}`, 400);
-  }
+  const result = await trashService.restoreTrashItem({ type, id, farmerId });
 
   return sendSuccess(res, {
-    message: `${type} restored successfully`,
+    message: `${result.modalName} restored successfully`,
     data: result,
   });
 });

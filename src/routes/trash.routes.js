@@ -6,8 +6,8 @@ const { protect } = require('../middlewares/auth');
 router.use(protect);
 
 // GET  /trash          — view all deleted items grouped by type
-// PATCH /trash/restore — restore any item { type: 'expense', id: 'uuid' }
-router.get('/',         trashController.getAllTrash);
+// PATCH /trash/restore — restore any item { modalType: 'expense', id: 'uuid' }
+router.get('/getAllTrash', trashController.getAllTrash);
 router.patch('/restore', trashController.restoreItem);
 
 module.exports = router;
