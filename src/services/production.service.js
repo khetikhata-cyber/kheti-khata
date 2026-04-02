@@ -87,14 +87,15 @@ const restoreProduction = async (productionId, farmerId) => {
   await restoreCropIfNeeded(production.cropId, farmerId, restoredAncestors);
 
   const restore = getRestoreUpdate();
+  const directProductionId = production.productionId;
   await Promise.all([
-    Production.findOneAndUpdate({ productionId, farmerId }, restore),
+    Production.findOneAndUpdate({ productionId: directProductionId, farmerId }, restore),
     Sale.updateMany(
       {
-        productionId,
+        productionId: directProductionId,
         farmerId,
         deletedParentType: 'production',
-        deletedParentId: productionId,
+        deletedParentId: directProductionId,
       },
       restore
     ),

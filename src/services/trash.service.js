@@ -65,6 +65,13 @@ const daysRemaining = (deletedAt) => {
   return Math.max(0, remaining);
 };
 
+const getDirectTrashQuery = (farmerId) => ({
+  farmerId,
+  deletedAt: { $ne: null },
+  deletedParentType: null,
+  deletedParentId: null,
+});
+
 const addMeta = (records, type) =>
   records.map((r) => ({
     ...r.toObject(),
@@ -81,11 +88,11 @@ const addMeta = (records, type) =>
 const getAllTrash = async (farmerId) => {
   const [fields, crops, expenses, bataidaars, productions, sales, loans] = await Promise.all([
     Field.find({ farmerId, deletedAt: { $ne: null } }).sort({ deletedAt: -1 }),
-    Crop.find({ farmerId, deletedAt: { $ne: null } }).sort({ deletedAt: -1 }),
-    Expense.find({ farmerId, deletedAt: { $ne: null } }).sort({ deletedAt: -1 }),
+    Crop.find(getDirectTrashQuery(farmerId)).sort({ deletedAt: -1 }),
+    Expense.find(getDirectTrashQuery(farmerId)).sort({ deletedAt: -1 }),
     Bataidaar.find({ farmerId, deletedAt: { $ne: null } }).sort({ deletedAt: -1 }),
-    Production.find({ farmerId, deletedAt: { $ne: null } }).sort({ deletedAt: -1 }),
-    Sale.find({ farmerId, deletedAt: { $ne: null } }).sort({ deletedAt: -1 }),
+    Production.find(getDirectTrashQuery(farmerId)).sort({ deletedAt: -1 }),
+    Sale.find(getDirectTrashQuery(farmerId)).sort({ deletedAt: -1 }),
     Loan.find({ farmerId, deletedAt: { $ne: null } }).sort({ deletedAt: -1 }),
   ]);
 

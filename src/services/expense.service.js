@@ -91,7 +91,12 @@ const restoreExpense = async (expenseId, farmerId) => {
 };
 
 const getTrashExpenses = async (farmerId) => {
-  return Expense.find({ farmerId, deletedAt: { $ne: null } }).sort({ deletedAt: -1 });
+  return Expense.find({
+    farmerId,
+    deletedAt: { $ne: null },
+    deletedParentType: null,
+    deletedParentId: null,
+  }).sort({ deletedAt: -1 });
 };
 
 module.exports = {

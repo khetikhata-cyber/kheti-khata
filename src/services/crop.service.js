@@ -183,19 +183,35 @@ const restoreCrop = async (cropId, farmerId) => {
   await restoreFieldIfNeeded(crop.fieldId, farmerId, restoredAncestors);
 
   const restore = getRestoreUpdate();
+  const directCropId = crop.cropId;
 
   await Promise.all([
     Crop.findOneAndUpdate({ _id: cropId, farmerId }, restore),
     Expense.updateMany(
-      { cropId, farmerId, deletedParentType: 'crop', deletedParentId: cropId },
+      {
+        cropId: directCropId,
+        farmerId,
+        deletedParentType: 'crop',
+        deletedParentId: directCropId,
+      },
       restore
     ),
     Production.updateMany(
-      { cropId, farmerId, deletedParentType: 'crop', deletedParentId: cropId },
+      {
+        cropId: directCropId,
+        farmerId,
+        deletedParentType: 'crop',
+        deletedParentId: directCropId,
+      },
       restore
     ),
     Sale.updateMany(
-      { cropId, farmerId, deletedParentType: 'crop', deletedParentId: cropId },
+      {
+        cropId: directCropId,
+        farmerId,
+        deletedParentType: 'crop',
+        deletedParentId: directCropId,
+      },
       restore
     ),
   ]);
