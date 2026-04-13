@@ -31,7 +31,9 @@ const getCropsByField = async (fieldId, farmerId) => {
 };
 
 const getCropById = async (cropId, farmerId) => {
-  const crop = await Crop.findOne({ cropId, farmerId, deletedAt: null });
+  const crop = await Crop.findOne({ cropId, farmerId, deletedAt: null })
+    .populate('fieldRefId')
+    .populate('bataidaarId');
   if (!crop) throw new AppError('Crop not found', 404);
   return crop;
 };
