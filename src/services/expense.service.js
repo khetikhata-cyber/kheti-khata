@@ -39,7 +39,7 @@ const createExpense = async (farmerId, data) => {
   const cropUpdate = {
     ...(data.phase !== 'sale' ? { $inc: { totalExpenses: data.amount } } : {}),
 
-    ...(data.phase === 'sale' ? { $set: { salePrice: data.amount } } : {}),
+    ...(data.phase === 'sale' ? { $inc: { salePrice: data.amount } } : {}),
   };
 
   await Crop.findOneAndUpdate({ cropId: data.cropId, farmerId, deletedAt: null }, cropUpdate);
